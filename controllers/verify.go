@@ -1,51 +1,32 @@
 package controllers
 
 import (
-	"fmt"
 	"liquor-store/config"
 	"liquor-store/models" // 📌 Санамсаргүй тоо үүсгэх сан
 	"net/http"
 
-	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 )
 
 func VerifyEmail(c *gin.Context) {
-	tokenString := c.Param("token") // Параметрийг авч байна
-
-	// Токен шалгах
-	claims := &jwt.MapClaims{}
-	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-		return []byte("your-secret-key"), nil
-	})
-
-	if err != nil || !token.Valid {
-		c.JSON(400, gin.H{"error": "Хүчингүй баталгаажуулах линк!"})
-		return
-	}
-
-	email, ok := (*claims)["email"].(string)
-	if !ok {
-		c.JSON(400, gin.H{"error": "Имэйл мэдээлэл олдсонгүй!"})
+	token := c.Query("token")
+	if token == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Токен байхгүй байна!"})
 		return
 	}
 
 	var user models.User
-	if err := config.DB.Where("email = ?", email).First(&user).Error; err != nil {
-		c.JSON(404, gin.H{"error": "Хэрэглэгч олдсонгүй!"})
+	if err := config.DB.Where("verification_token = ?", token).First(&user).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Хэрэглэгч олдсонгүй!"})
 		return
 	}
 
+	// Хэрэглэгчийн имэйлийг баталгаажуулах
 	user.Verified = true
+	user.VerificationToken = ""
 	config.DB.Save(&user)
-	if err != nil {
-		fmt.Println("Token Error: ", err)
-	}
-	if !token.Valid {
-		fmt.Println("Invalid Token!")
-	}
 
-	c.JSON(200, gin.H{"message": "Баталгаажуулалт амжилттай!"})
+	c.JSON(http.StatusOK, gin.H{"message": "Имэйл амжилттай баталгаажлаа!"})
 }
 
 func VerifyCode(c *gin.Context) {

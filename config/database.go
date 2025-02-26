@@ -19,7 +19,7 @@ func ConnectDatabase() {
 	}
 
 	// AutoMigrate ашиглан хүснэгтийг шинэчлэх
-	database.AutoMigrate(&models.User{})
+	database.AutoMigrate(&models.Product{})
 
 	DB = database
 }

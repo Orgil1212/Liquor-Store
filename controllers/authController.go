@@ -169,26 +169,21 @@ func Login(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&input); err != nil {
+		fmt.Println("❌ JSON Parse Error:", err)
 		c.JSON(400, gin.H{"error": err.Error()})
-		return
-	}
-
-	if input.Password == "" {
-		fmt.Println("❌ Нууц үг хоосон байна!")
-		c.JSON(400, gin.H{"error": "Нууц үг хоосон байна!"})
 		return
 	}
 
 	var user models.User
 	if err := config.DB.Where("email = ?", input.Email).First(&user).Error; err != nil {
-		fmt.Println("❌ Хэрэглэгч олдсонгүй!")
+		fmt.Println("❌ User not found")
 		c.JSON(401, gin.H{"error": "Хэрэглэгч олдсонгүй!"})
 		return
 	}
 
 	// Нууц үгийг шалгах
 	if !comparePassword(user.Password, user.Salt, input.Password) {
-		fmt.Println("❌ Нууц үг таарахгүй байна!")
+		fmt.Println("❌ Incorrect password")
 		c.JSON(401, gin.H{"error": "Нууц үг буруу байна!"})
 		return
 	}
@@ -196,12 +191,19 @@ func Login(c *gin.Context) {
 	// JWT үүсгэх
 	token, err := GenerateJWT(user)
 	if err != nil {
+		fmt.Println("❌ JWT generation failed:", err)
 		c.JSON(500, gin.H{"error": "JWT үүсгэхэд алдаа гарлаа!"})
 		return
 	}
 
-	c.JSON(200, gin.H{"token": token})
+	// ✅ Debug Log - JSON Response харах
+	responseData := gin.H{"token": token, "message": "Login successful"}
+	fmt.Println("✅ Sending JSON Response:", responseData)
+
+	// ✅ JSON өгөгдлийг зөв буцаах
+	c.JSON(200, responseData)
 }
+
 func GetAllUsers(c *gin.Context) {
 	var users []models.User
 

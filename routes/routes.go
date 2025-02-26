@@ -3,6 +3,7 @@ package routes
 import (
 	"liquor-store/controllers"
 	"net/http"
+	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-contrib/cors"
@@ -11,7 +12,14 @@ import (
 
 func SetupRouter() *gin.Engine {
 	r := gin.Default()
-	r.Use(cors.Default()) // Энэ нь бүх домэйнээс ирсэн хүсэлтийг зөвшөөрнө
+	// 📌 CORS тохиргоо хийх
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:3000"}, // Frontend-ээс зөвшөөрөх
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
 
 	api := r.Group("/api")
 	{
@@ -20,7 +28,14 @@ func SetupRouter() *gin.Engine {
 		api.GET("/profile/:id", controllers.GetProfile)
 		api.POST("/check-user", controllers.CheckUserExists) // 📌 Хэрэглэгч бүртгэлтэй эсэхийг шалгах API
 		api.POST("/forgot-password", controllers.ForgotPassword)
-		api.GET("/verify-email/:token", controllers.VerifyEmail) // Токен параметрийг зөвшөөрөх
+		api.GET("/verify-email/:token", controllers.VerifyEmail)   // Токен параметрийг зөвшөөрөх
+		api.GET("/products", controllers.GetProducts)              // Бүтээгдэхүүн авах
+		api.POST("/products", controllers.CreateProduct)           // Бүтээгдэхүүн нэмэх
+		api.PUT("/update-profile", controllers.UpdateProfile)      // 📌 Профайл шинэчлэх API
+		api.DELETE("/api/products/:id", controllers.DeleteProduct) //
+		api.POST("/api/cart", controllers.AddToCart)               // 🛒 Сагсанд нэмэх
+		api.GET("/api/cart/:user_id", controllers.GetCart)         // 📦 Хэрэглэгчийн сагсыг авах
+		api.DELETE("/api/cart/:id", controllers.RemoveFromCart)    // ❌ Сагснаас бүтээгдэхүүн хасах
 
 		// Админ API
 		admin := api.Group("/admin")
